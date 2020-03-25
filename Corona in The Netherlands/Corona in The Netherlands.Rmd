@@ -10,9 +10,7 @@ library(tidyverse)
 library(lubridate)
 library(zoo)
 library(gghighlight)
-library(ggtext)
 library(ggthemes)
-library(corrr)
 ```
 
 ```{r}
@@ -84,7 +82,6 @@ cities <- c('Tilburg','Breda','Utrecht','Amsterdam','Rotterdam',
 
 cities_ordered <- nl_data %>% 
     filter(Gemeentenaam %in% cities) %>% 
-  #filter(Provincienaam == 'Zuid-Holland') %>% 
   group_by(Gemeentenaam) %>% 
   summarize(sum_aantal = sum(Aantal)) %>% 
   arrange(desc(sum_aantal)) %>%
@@ -122,19 +119,6 @@ nl_ds_vis <- nl_ds %>%
          
   Aantal=na.locf0(Aantal)) %>% 
   replace(is.na(.), 0)
-```
-
-```{r fig.height=25,fig.width=20}
-nl_ds_vis %>% 
-  ggplot(aes(Datum,Aantal)) +
-  
-  geom_point(color = 'indianred',size =3,) +
-  geom_line(color = '#E7962A',size = 1.5,alpha = 1) +
-  geom_area(fill = '#F6DAB4',color = '#F6DAB4' ) +
-  #scale_x_continuous(breaks = c(10,15,20),labels = c(ticks_2,
-  #                                                   'اسنفد 25',
-  #                                                   ticks_) )+
-  facet_wrap(~fct_reorder(City,-Aantal),ncol = 3)
 ```
 
 
