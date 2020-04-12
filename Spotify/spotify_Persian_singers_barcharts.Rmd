@@ -1,0 +1,654 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(gargle)
+library(tidyverse)
+library(googlesheets4)
+library(tidymodels)
+library(gghighlight)
+library(hrbrthemes)
+library(ggthemes)
+library(ggrepel)
+library(ggalt)
+library(extrafont)
+library(ggtext)
+library(ggforce)
+library(cowplot)
+```
+
+
+
+
+```{r}
+#songs_audio_plus_pop <- read_csv('songs_audio_plus_pop_06_04_2020_v9.csv')
+songs_audio_plus_pop <- read_delim('songs_audio_plus_pop_06_04_2020_v10.tsv',delim = '\t')
+#songs_audio_plus_pop <-read_sheet('https://docs.google.com/spreadsheets/d/1HaUwn7f4uN1P_mm8N9Ag2JypwDGpPtnOKqpThS-wpJE/edit?usp=sharing')
+songs_audio_plus_pop <- songs_audio_plus_pop %>%
+  filter(
+    !artist_name %in% c(
+      'Hatam Asgari',
+      'Kaveh Deylami',
+      'Nasser Abdollahi',
+      'Peyman Yazdanian',
+      'Abbas Ghaderi',
+      'Mohammad Golriz',
+      'Hamid Hami',
+      'Koveyti Poor',
+      'Mohsen Sharifian',
+      'Soheil Nafissi'
+    )
+  )
+
+songs_audio_plus_pop <- songs_audio_plus_pop %>%
+    mutate(
+    track_name_farsi_na = if_else(
+      is.na(track_name_farsi),
+      track_name,
+      ''
+    ))
+
+
+popular_songs <- songs_audio_plus_pop %>%
+  filter(!(is.na(popularity))) %>% 
+  filter(!(is.na(track_name_farsi))) %>% 
+  group_by(artist_name) %>% 
+  arrange(desc(popularity)) %>% 
+  slice(1)
+```
+
+```{r energy,fig.height=20,fig.width=20,fig.retina=2,dpi=2000}
+least <- songs_audio_plus_pop %>%
+  arrange(energy) %>%
+  slice(1:10)  %>%
+  mutate(energy = energy + 0.02)
+
+
+most <- songs_audio_plus_pop %>%
+  arrange(desc(energy)) %>%
+  slice(1:10) %>%
+  mutate(energy = energy + 0.02)
+
+df <- most %>%
+  bind_rows(popular_songs %>% mutate(energy = energy + 0.02)) %>%
+  bind_rows(least) %>%
+  mutate(
+    is_popular = !is.na(popularity),
+    track_name_farsi_no_na = if_else(
+      is.na(track_name_farsi),
+      '',
+      paste('-' , track_name_farsi, sep = '')
+    )
+  ) %>%
+  arrange(energy) %>%
+  distinct(artist_name_farsi, track_name_farsi, .keep_all = TRUE)
+
+df$id <- c(1:nrow(df))
+
+# calculate the ANGLE of the labels
+number_of_bar <- nrow(df)
+angle <- 180 + 90 - 360 * (df$id - .5)  / number_of_bar
+
+df$angle <- angle
+df <- df %>%
+  mutate(angle = if_else(angle < 180, angle, angle + 180)) %>%
+  mutate(
+    angle = if_else(angle < 180 &
+                      angle > 97, angle + 180, angle),
+    label = paste(artist_name_farsi, track_name_farsi, sep = ' - ')
+  )
+
+df %>%
+  
+  ggplot(aes(
+    x = fct_reorder(track_name, energy),
+    y = energy,
+    fill = is_popular
+  )) +
+  
+  geom_bar(position = "stack",
+           stat = "identity",
+           alpha = 0.8) +
+  
+  scale_fill_manual(values = c('#EF476F', '#06D6A0')) +
+  geom_text(
+    aes(label = label,
+        x = id,
+        y = energy + 0.6, ),
+    family = 'B Nazanin',
+    angle = df$angle,
+    size = 5.5,
+    hjust = 0.5,
+    color = 'gray80'
+  ) +
+  theme_fivethirtyeight() +
+  ylim(-1.5, 2) +
+  coord_polar(direction = 2,
+              clip = "off") +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -0.7,
+    hjust = .5,
+    vjust = 1,
+    label = "پرانرژی و کم انرژی ترین قطعات موسیقی",
+    size = 11,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "#EF476F"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.0,
+    hjust = .5,
+    vjust = 1,
+    label = "10 قطعه موسیقی با کمترین و10 قطعه موسیقی با بیشترین میزان انرژی ",
+    size = 7,
+    lineheight = .8,
+    family = "B Tehran",
+    color = 'gray80'
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.10,
+    hjust = .5,
+    vjust = 1,
+    label = "به همراه محبوب ترین قطعه موسیقی هر خواننده ",
+    size = 7,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "#06D6A0"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.20,
+    hjust = .5,
+    vjust = 1,
+    label = "به ترتیب میزان انرژی نشان داده شده اند",
+    size = 7,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray80"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.35,
+    hjust = .5,
+    vjust = 1,
+    label = "منبع: اسپاتیفای",
+    size = 4.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray60"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.45,
+    hjust = .5,
+    vjust = 1,
+    label = "مصورسازی: محمد چناریان نخعی",
+    size = 4.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray60"
+  ) +
+  theme_void() +
+  theme(
+    axis.text.y.left = element_blank(),
+    axis.ticks  = element_blank(),
+    legend.position = 'none',
+    plot.background = element_rect(fill = "#516869")
+  ) 
+```
+
+
+
+
+
+```{r valence, fig.height=20,fig.width = 20}
+least <- songs_audio_plus_pop %>%
+  arrange(valence) %>%
+  slice(1:10)  %>%
+  filter(!str_detect(track_name, 'Ruzza'))  %>%
+  mutate(valence = valence + 0.02)
+most <- songs_audio_plus_pop %>%
+  arrange(desc(valence)) %>%
+  slice(1:10) %>%
+  mutate(valence = valence + 0.02)
+
+df <- most %>%
+  bind_rows(popular_songs %>% mutate(valence = valence + 0.02)) %>%
+  bind_rows(least) %>%
+  mutate(
+    is_popular = !is.na(popularity),
+    track_name_farsi_no_na = if_else(
+      is.na(track_name_farsi),
+      '',
+      paste('-' , track_name_farsi, sep = '')
+    )
+  ) %>%
+  arrange(valence) %>%
+  distinct(track_name_farsi, artist_name_farsi, .keep_all = TRUE)
+
+df$id <- c(1:nrow(df))
+
+# calculate the ANGLE of the labels
+number_of_bar <- nrow(df)
+angle <- 180 + 90 - 360 * (df$id - .5)  / number_of_bar
+
+df$angle <- angle
+df <- df %>%
+  mutate(angle = if_else(angle < 180, angle, angle + 180)) %>%
+  mutate(angle = if_else(angle < 180 &
+                           angle > 97, angle + 180, angle))
+
+df %>%
+  
+  ggplot(aes(
+    x = fct_reorder(track_name, valence),
+    y = valence,
+    fill = is_popular
+  )) +
+  
+  geom_bar(position = "stack",
+           stat = "identity",
+           alpha = 0.8) +
+  
+  scale_fill_manual(values = c('#FFD166', '#06D6A0')) +
+  theme_fivethirtyeight() +
+  ylim(-1.5, 2) +
+  coord_polar(direction = 1,
+              clip = "off") +
+  geom_text(
+    aes(
+      label = paste(artist_name_farsi, track_name_farsi, sep = ' - '),
+      x = id,
+      y = valence + 0.6,
+    ),
+    family = 'B Mitra',
+    angle = df$angle,
+    size = 6,
+    hjust = 0.5,
+    color = 'gray80'
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -0.7,
+    hjust = .5,
+    vjust = 1,
+    label = "شادترین  و  غمگین ترین قطعات موسیقی فارسی",
+    size = 11,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "#FFD166"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.0,
+    hjust = .5,
+    vjust = 1,
+    label = "غم انگیزترین 10 قطعه موسیقی و شادترین 10 قطعه موسیقی ",
+    size = 6.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = 'gray80'
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.10,
+    hjust = .5,
+    vjust = 1,
+    label = "به همراه محبوب ترین قطعه موسیقی هر خواننده ",
+    size = 6.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "#06D6A0"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.20,
+    hjust = .5,
+    vjust = 1,
+    label = "و به ترتیب میزان شادی نشان داده شده اند",
+    size = 6.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray80"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.35,
+    hjust = .5,
+    vjust = 1,
+    label = "منبع: اسپاتیفای",
+    size = 4.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray70"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.45,
+    hjust = .5,
+    vjust = 1,
+    label = "مصورسازی: محمد چناریان نخعی",
+    size = 4.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray70"
+  ) +
+  theme_void() +
+  theme(
+    axis.text.y.left = element_blank(),
+    axis.ticks  = element_blank(),
+    legend.position = 'none',
+    plot.margin = grid::unit(c(0, 0, 0, 0), "mm"),
+    plot.background = element_rect(fill = "#516869")
+  )
+
+```
+
+
+```{r fig.height=20,fig.width = 20}
+least <- songs_audio_plus_pop %>%
+  arrange(danceability) %>%
+  slice(1:10)  %>%
+  filter(!str_detect(track_name, 'Ruzza'))  %>%
+  mutate(danceability = danceability + 0.02)
+
+
+most <- songs_audio_plus_pop %>%
+  arrange(desc(danceability)) %>%
+  slice(1:10) %>%
+  mutate(danceability = danceability + 0.02)
+
+df <- most %>%
+  bind_rows(popular_songs %>% mutate(danceability = danceability + 0.02)) %>%
+  bind_rows(least) %>%
+  mutate(
+    is_popular = !is.na(popularity),
+    track_name_farsi_no_na = if_else(
+      is.na(track_name_farsi),
+      '',
+      paste('-' , track_name_farsi, sep = '')
+    )
+  ) %>%
+  arrange(danceability) %>%
+  distinct(artist_name_farsi, track_name_farsi, .keep_all = TRUE)
+
+df$id <- c(1:nrow(df))
+
+# calculate the ANGLE of the labels
+number_of_bar <- nrow(df)
+angle <- 180 + 90 - 360 * (df$id - .5)  / number_of_bar
+
+df$angle <- angle
+df <- df %>%
+  mutate(angle = if_else(angle < 180, angle, angle + 180)) %>%
+  mutate(angle = if_else(angle < 180 &
+                           angle > 97, angle + 180, angle))
+
+df %>%
+  
+  ggplot(aes(
+    x = fct_reorder(track_name, danceability),
+    y = danceability,
+    fill = is_popular
+  )) +
+  
+  geom_bar(position = "stack", stat = "identity") +
+  scale_fill_manual(values = c('#A5668B', '#06D6A0')) +
+  
+  
+  ylim(-1.5, 2) +
+  coord_polar(direction = 1,
+              clip = "off") +
+  geom_text(
+    aes(
+      label = paste(artist_name_farsi, track_name_farsi, sep = ' - '),
+      x = id,
+      y = danceability + 0.53,
+    ),
+    family = 'B Tehran',
+    angle = df$angle,
+    size = 6,
+    hjust = 0.5,
+    color = 'gray80'
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -0.7,
+    hjust = .5,
+    vjust = 1,
+    label = "کدام قطعات موسیقی کمترین و بیشترین رقص آوری را دارند؟",
+    size = 10,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "#A5668B"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.,
+    hjust = .5,
+    vjust = 1,
+    label = "در این نمودار 10 قطعه موسیقی که کمترین و 10 قطعه موسیقی که بیشترین میزان رقص آوری  را دارند",
+    size = 6.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = 'gray80'
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.15,
+    hjust = .5,
+    vjust = 1,
+    label = "به همراه محبوب ترین قطعه موسیقی هر خواننده ",
+    size = 6.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "#06D6A0"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.25,
+    hjust = .5,
+    vjust = 1,
+    label = "که بر اساس رقص آوری مرتب شده اند نشان داده شده اند",
+    size = 6.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray80"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.35,
+    hjust = .5,
+    vjust = 1,
+    label = "منبع: اسپاتیفای",
+    size = 4.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray60"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.45,
+    hjust = .5,
+    vjust = 1,
+    label = "مصورسازی: محمد چناریان نخعی",
+    size = 4.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray60"
+  ) +
+  theme_void() +
+  theme(
+    axis.text.y.left = element_blank(),
+    axis.ticks  = element_blank(),
+    legend.position = 'none',
+    plot.background = element_rect(fill = "#516869")
+  ) 
+```
+
+
+
+```{r fig.height=20,fig.width = 20}
+
+most <- songs_audio_plus_pop %>%
+  arrange(desc(instrumentalness)) %>%
+  slice(1:10) %>%
+  mutate(instrumentalness = instrumentalness + 0.02) 
+
+df <- most %>%
+  bind_rows(popular_songs %>% mutate(instrumentalness = instrumentalness + 0.02)) %>%
+  mutate(
+    is_popular = !is.na(popularity),
+    track_name_farsi_no_na = if_else(
+      is.na(track_name_farsi),
+      '',
+      paste('-' , track_name_farsi, sep = '')
+    )
+  ) %>%
+  arrange(instrumentalness) %>%
+  distinct(artist_name_farsi, track_name_farsi_na, .keep_all = TRUE)
+
+df$id <- c(1:nrow(df))
+
+# calculate the ANGLE of the labels
+number_of_bar <- nrow(df)
+angle <- 180 + 90 - 360 * (df$id - .5)  / number_of_bar
+
+df$angle <- angle
+df <- df %>%
+  mutate(angle = if_else(angle < 180, angle, angle + 180)) %>%
+  mutate(angle = if_else(angle < 180 &
+                           angle > 97, angle + 180, angle))
+
+df %>%
+  
+  ggplot(aes(
+    x = fct_reorder(track_name, instrumentalness),
+    y = instrumentalness,
+    fill = is_popular
+  )) +
+  
+  geom_bar(position = "stack", stat = "identity") +
+  
+  
+  geom_text(
+    aes(
+      label = paste(artist_name_farsi, track_name_farsi_na, sep = ' - '),
+      x = id,
+      y = instrumentalness + 0.5,
+    ),
+    
+    family = 'B Tehran',
+    angle = df$angle,
+    size = 5,
+    hjust = 0.5,
+    color = 'gray80'
+  ) +
+  ylim(-1.5, 2) +
+  coord_polar(direction = 1,
+              clip = "off") +
+  scale_fill_manual(values = c('#118AB2', '#06D6A0')) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -0.7,
+    hjust = .5,
+    vjust = 1,
+    label = "کدام قطعات موسیقی کمترین و بیشترین ملودی را دارند؟",
+    size = 10,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "#118AB2"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.,
+    hjust = .5,
+    vjust = 1,
+    label = "10 قطعه موسیقی با کمترین و10 قطعه موسیقی با بیشترین میزان ملودی",
+    size = 7.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = 'gray80'
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.15,
+    hjust = .5,
+    vjust = 1,
+    label = "به همراه محبوب ترین قطعه موسیقی هر خواننده ",
+    size = 6.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "#06D6A0"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.25,
+    hjust = .5,
+    vjust = 1,
+    label = "که بر اساس ملودی مرتب شده اند نشان داده شده اند",
+    size = 6.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray80"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.35,
+    hjust = .5,
+    vjust = 1,
+    label = "منبع: اسپاتیفای",
+    size = 4.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray60"
+  ) +
+  annotate(
+    geom = "text",
+    x = 0,
+    y = -1.45,
+    hjust = .5,
+    vjust = 1,
+    label = "مصورسازی: محمد چناریان نخعی",
+    size = 4.5,
+    lineheight = .8,
+    family = "B Tehran",
+    color = "gray60"
+  ) +
+  theme_void() +
+  theme(
+    axis.text.y.left = element_blank(),
+    axis.ticks  = element_blank(),
+    legend.position = 'none',
+    plot.background = element_rect(fill = "#516869")
+  ) 
+```

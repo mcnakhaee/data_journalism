@@ -1,0 +1,602 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+#install.packages('spotifyr')
+library(spotifyr)
+library(tidyverse)
+library(genius)
+library(gargle)
+library(tidyverse)
+library(googlesheets4)
+library(tidymodels)
+library(gghighlight)
+library(hrbrthemes)
+library(ggthemes)
+library(ggrepel)
+library(ggalt)s
+access_token <- get_spotify_access_token(client_id = 'your_client_id',
+                                          client_secret = 'your_client_secret')
+```
+
+
+
+
+
+```{r}
+
+
+
+artists_0 <-
+  c(
+    'Mohsen Yeganeh',
+    'Mehdi Yarrahi',
+    'Mohammad-Reza Shajarian',
+    'Morteza Pashaei'
+    
+  )
+
+artists <- c(
+    'Shahram Nazeri',
+    'Ali Lohrasbi',
+    'Ehsan Khajeh Amiri',
+    'Sirvan Khosravi',
+    'Xaniar Khosravi',
+    'Shadmehr Aghili'
+  )
+
+artists_1 <-
+  c(
+    'Siavash Ghomayshi',
+    'Benyamin Bahadori',
+    'Alireza Eftekhari',
+    'Majid Akhshabi',
+    'Faramarz Aslani',
+    'Alireza Assar',
+    'Iraj Bastami',
+    'Mohammad Esfahani',
+    'Ehsan Khajeh Amiri'
+    
+  )
+artists_2 <-
+  c(
+    'Hesameddin Seraj',
+    #'Banan',
+    'Mohammad Esfahani',
+    'Mohsen Chavoshig',
+    'Reza Sadeghi',
+    'Abdolhosein Mokhtabad',
+    'Alireza Assar',
+    'Roozbeh Nematollahi',
+    'Hossein Alizadeh',
+    'Peyman Yazdanian',
+    'Kayhan Kalhor'
+    
+  )
+
+artists_3 <-
+  c(
+    'Mohammadreza Shajarian',
+    'Alireza Ghorbani',
+    'Parviz Meshkatian',
+    'Mohammad Reza Lotfi',
+    'Dang Show',
+    "Nasser Abdollahi",
+    'Soheil Nafissi',
+    'Farhad Mehrad'
+
+  )
+
+artists_4 <-
+  c(    'Afshin Moghaddam',
+    'Koveyti Poor',
+    'Mohammad Golriz',
+    'Faramarz Aslani',
+    'Abbas Ghaderi',
+    "Javad Yassari",
+    "Sattar",
+    'Mohsen Sharifian')
+
+artists_5 <-
+  c(
+    'Babak Jahanbakhsh',
+    'Habib',
+    'Ehsan Khajehamiri',
+    "Mazyar Fallahi",
+    'Mohammad Alizadeh',
+    'Farzad Farzin',
+    'Ali Zand Vakili',
+    'Amirabbas Golab',
+    'Hamid Askari',
+    'Mohsen Namjoo'
+    
+  )
+artists_6 <-c(
+
+    'Hamed Homayoun',
+    'Morteza Pashaei',
+    'Kaveh Deylami',
+    'Hatam Asgari',
+    'Hamid Hami',
+    'Shahram Shabpareh',
+    #'Ebi',
+    'Moein',
+    'Hassan Shamaizadeh',
+    'Faramarz Assef',
+    'Dariush',
+    'Amir Tataloo',
+    'Dang Show',
+    'Rastak',
+    'Macan Band',
+    'Sasy',
+    'Tohi'
+  )
+
+
+artists_7 <-c("Parviz Meshkatian",
+  "Hassan Shamaizadeh",
+  "Rastak",
+  "Peyman Yazdanian",
+  "Siavash Ghomayshi",
+  "Alireza Assar",
+  "Siavash Ghomayshi",
+  'Homayoun Shajarian',
+  #'Rasoul Najafian',g
+  'Shahram Shokoohi',
+  'Kourosh Yaghmaei',
+  'Xaniar Khosravi',
+  'Mohammad Nouri',
+  'Sirvan Khosravi',
+  'Ebrahim Monsefi',
+  'Farman Fathalian',
+  'Hichkas',
+  'Habib',
+  'Xaniar Khosravi',
+  'Ali Lohrasbi')
+
+
+
+list_artists <- c(artists_0,artists_2,artists_1,artists_3,artists_4,artists_5,artists_6,artists_7)
+
+```
+
+# Get artists songs and audio features
+
+```{r}
+artist_audio_features <-
+  get_artist_audio_features('Salar Aghili',
+                            include_groups = c("album", "single", "compilation"))
+
+for (artist in list_artists) {
+  print(artist)
+  Sys.sleep(5)
+  if (artist == 'Alireza Ghorbani') {
+    tmp <-
+      get_artist_audio_features(artist,
+                                include_groups = c("album", "single" , "compilation", "appears_on"))
+    
+  }
+  tmp <-
+    get_artist_audio_features(artist, include_groups = c("album", "single", "compilation"))
+  artist_audio_features <- rbind(artist_audio_features, tmp)
+}
+```
+
+
+# Get all artists' top trackss
+
+```{r}
+artist_top_tracks <-
+  get_artist_top_tracks('27dwAgbXmxxoow8Mpn7aQz', include_meta_info = TRUE)[[1]]
+
+artist_top_tracks$name_artist_ <- 'Salar Aghili'
+for (artist in list_artists) {
+  tmp <- get_artist_audio_features(artist)
+  Sys.sleep(2)
+  artist_id <- tmp %>%
+    slice(1) %>%
+    select(artist_id) %>%
+    pull()
+  tmp_top <-
+    get_artist_top_tracks(artist_id, include_meta_info = TRUE)[[1]]
+  tmp_top$name_artist_ <- artist
+  artist_top_tracks <- rbind(artist_top_tracks, tmp_top)
+  
+}
+
+```
+
+
+
+
+```{r}
+artist_top_tracks %>%
+  select(
+    -album.images,
+    -album.artists ,
+    -artists,
+    -album.external_urls.spotify,
+    -album.type
+    ,
+    -external_ids.isrc,
+    external_urls.spotify,
+    -album.album_type,
+    -uri
+  ) %>%
+  write_csv('artist_top_tracks_04_04_2020.csv')
+
+```
+
+
+
+# Preprocessng
+## removing redundent variables
+## adding artists' names in 
+```{r}
+spotify_songs_audio_features <- artist_audio_features %>%
+  select(-album_images, -artists,-available_markets) %>%
+  select(
+    -album_type
+    ,
+    -album_release_date_precision,
+    -analysis_url,
+    -type,
+    -track_uri,
+    -external_urls.spotify,
+    -track_uri,
+    -type,
+    -is_local,
+    -track_preview_url
+  ) %>%
+  mutate(
+    artist_name_farsi =  case_when(
+      artist_name == 'Hamed Homayoun' ~ 'حامد همایون',
+      artist_name == 'Hamid Askari' ~ 'حمید عسکری',
+      artist_name == 'Hassan Shamaizadeh' ~ 'حسن شماعی زاده',
+      artist_name == 'Hesameddin Seraj' ~ 'حسام الدین سراج',
+      artist_name == 'Hossein Alizadeh' ~ 'حسین علیزاده',
+      artist_name == 'Iraj Bastami' ~ 'ایرج بسطامی',
+      artist_name == 'Javad Yassari' ~ 'جواد یساری',
+      artist_name == 'Benyamin Bahadori' ~ 'بنیامین بهادری',
+      artist_name == 'Ehsan Khajeh Amiri' ~ 'احسان خواجه امیری',
+      artist_name == 'Ehsan Khajehamiri' ~ 'احسان خواجه امیری',
+      artist_name == 'Faramarz Aslani' ~ 'فرامرز اصلانی',
+      artist_name == 'Faramarz Assef' ~ 'فرامرز آصف',
+      artist_name == 'Farhad Mehrad' ~ 'فرهاد',
+      artist_name == 'Farzad Farzin' ~ 'فرزاد فرزین',
+      artist_name == 'Abbas Ghaderi' ~ 'عباس قادری',
+      artist_name == 'Abdolhosein Mokhtabad' ~ 'عبدالحسین مختاباد',
+      artist_name == 'Afshin Moghaddam' ~ 'افشین مقدم',
+      artist_name == 'Ali Zand Vakili' ~ 'علی زندوکیلی',
+      artist_name == 'Alireza Assar' ~ 'علیرضا اعصار',
+      artist_name == 'Alireza Eftekhari' ~ 'علیرضا افتخاری',
+      artist_name == 'Alireza Ghorbani' ~ 'علیرضا قربانی',
+      artist_name == 'Amir Tataloo' ~ 'امیر تتلو',
+      artist_name == 'Amirabbas Golab' ~ 'امیرعباس گلاب',
+      artist_name == 'Babak Jahanbakhsh' ~ 'بابک جهانبخش',
+      artist_name == 'Dang Show	' ~ 'دنگ شو',
+      artist_name == 'Dariush' ~ 'داریوش',
+      artist_name == 'Kaveh Deylami' ~ 'کاوه دیلمی',
+      artist_name == 'Kayhan Kalhor' ~ 'کیهان کلهز',
+      artist_name == 'Koveyti Poor' ~ 'کویتی پور',
+      artist_name == 'Majid Akhshabi' ~ 'مجید اخشابی',
+      artist_name == 'Mazyar Fallahi' ~ 'مازیار فلاحی',
+      artist_name == 'Mehdi Yarrahi' ~ 'مهدی یراحی',
+      artist_name == 'Moein' ~ 'معین',
+      artist_name == 'Mohammad-Reza Shajarian' ~ 'محمد رضا شجریان',
+      artist_name == 'Mohammad Alizadeh' ~ 'محمد علیزاده',
+      artist_name == 'Mohammad Esfahani' ~ 'محمد اصفهانی',
+      artist_name == 'Mohammad Golriz' ~ 'محمد گلریز',
+      artist_name == 'Mohammad Reza Lotfi' ~ 'محمد رضا لطفی',
+      artist_name == 'Mohsen Chavoshi' ~ 'محسن چاووشی',
+      artist_name == 'Mohammadreza Shajarian' ~ 'محمد رضا شجریان',
+      artist_name == 'Mohsen Namjoo' ~ 'محسن نامجو',
+      artist_name == 'Mohsen Sharifian' ~ 'محسن شریفیان',
+      artist_name == 'Mohsen Yeganeh' ~ 'محسن یگانه',
+      artist_name == 'Morteza Pashaei' ~ 'مرتضی پاشایی',
+      artist_name == 'Parviz Meshkatian' ~ 'پرویز مشکاتیان',
+      artist_name == 'Nasser Abdollahi' ~ 'ناصر عبداللهی',
+      artist_name == 'Rastak' ~ 'رستاک',
+      artist_name == 'Reza Sadeghi' ~ 'رضا صادقی',
+      artist_name == 'Salar Aghili' ~ 'سالار عقیلی',
+      artist_name == 'Sattar' ~ 'ستار',
+      artist_name == 'Shahram Shabpareh' ~ 'شهرام شب پره',
+      artist_name == 'Reza Sadeghi' ~ 'رضا صادقی',
+      artist_name == 'Peyman Yazdanian' ~ 'پیمان یزدانیان',
+      artist_name == 'Siavash Ghomayshi' ~ 'سیاوش قمیشی',
+      artist_name == 'Soheil Nafissi' ~ 'سهیل نفیسی',
+      artist_name == 'Homayoun Shajarian' ~ 'همایون شجریان',
+      artist_name == 'Roozbeh Nematollahi' ~ 'روزبه نعمت اللهی',
+      artist_name == 'Dang Show' ~ 'دنگ شو',
+      artist_name == 'Hamid Hami' ~ 'حمید حامی',
+      artist_name == 'Shahram Shokoohi' ~ 'شهرام شکوهی',
+      artist_name == "Kourosh Yaghmaei" ~ 'کوروش یغمایی',
+      artist_name == "Mohammad Nouri" ~ 'محمد نوری',
+      artist_name == 'Hamid Hami' ~ 'حمید حامی',
+      artist_name == "Sirvan Khosravi" ~ 'سیروان خسروی',
+      artist_name == 'Ebrahim Monsefi' ~ 'ابراهیم منصفی',
+      artist_name == "Farman Fathalian" ~ 'فرمان فتحعلیان',
+      artist_name == "Hichkas" ~ 'هیچ کس',
+      artist_name == 'Habib' ~ 'حبیب',
+      artist_name == "Xaniar Khosravi" ~ 'زانیار خسروی',
+      artist_name == "Ali Lohrasbi" ~ 'علی لهراسبی',
+      
+      TRUE ~ 'سایر'
+    )
+  ) %>%
+  filter(!is.na(loudness)) %>%
+  filter(!artist_name %in% c('Eminem', 'Habibi', 'Ebi')) %>%
+  distinct(track_id, .keep_all = TRUE)
+
+
+
+
+artist_top_tracks_2 <- artist_top_tracks %>%
+  select(
+    -album.images,
+    -album.artists ,
+    -artists,
+    -album.external_urls.spotify,
+    -album.type,
+    -external_ids.isrc,
+    external_urls.spotify,
+    -album.album_type,
+    -uri,
+    -external_urls.spotify,
+    -is_local,
+    -is_playable,
+    -type,
+    -href,
+    -preview_url,
+    -album.release_date_precision,
+    -album.uri
+    
+  ) %>%
+  #Correcting namess
+  mutate(
+    name_artist_ = if_else(
+      name_artist_ == 'Mohammad-Reza Shajarian',
+      'Mohammadreza Shajarian',
+      name_artist_
+    ),
+    name_artist_ = if_else(
+      name_artist_ == 'Ehsan Khajehamiri',
+      'Ehsan Khajeh Amiri',
+      name_artist_
+    ),
+    name_artist_ = if_else(
+      name_artist_ == 'Mohsen Chavoshig',
+      'Mohsen Chavoshi',
+      name_artist_
+    )
+  ) %>%
+  rename(
+    artist_name = name_artist_,
+    track_name = name,
+    track_id = id,
+    album_id = album.id,
+    album_name = album.name,
+    album_total_tracks = album.total_tracks,
+    album_release_date = album.release_date,
+    album_href = album.href
+  ) %>%
+  mutate(
+    artist_name_farsi =  case_when(
+      artist_name == 'Hamed Homayoun' ~ 'حامد همایون',
+      artist_name == 'Hamid Askari' ~ 'حمید عسکری',
+      
+      artist_name == 'Hassan Shamaizadeh' ~ 'حسن شماعی زاده',
+      artist_name == 'Hesameddin Seraj' ~ 'حسام الدین سراج',
+      artist_name == 'Hossein Alizadeh' ~ 'حسین علیزاده',
+      artist_name == 'Iraj Bastami' ~ 'ایرج بسطامی',
+      artist_name == 'Javad Yassari' ~ 'جواد یساری',
+      artist_name == 'Benyamin Bahadori' ~ 'بنیامین بهادری',
+      artist_name == 'Ehsan Khajeh Amiri' ~ 'احسان خواجه امیری',
+      artist_name == 'Ehsan Khajehamiri' ~ 'احسان خواجه امیری',
+      artist_name == 'Faramarz Aslani' ~ 'فرامرز اصلانی',
+      artist_name == 'Faramarz Assef' ~ 'فرامرز آصف',
+      artist_name == 'Farhad Mehrad' ~ 'فرهاد',
+      artist_name == 'Farzad Farzin' ~ 'فرزاد فرزین',
+      artist_name == 'Abbas Ghaderi' ~ 'عباس قادری',
+      artist_name == 'Abdolhosein Mokhtabad' ~ 'عبدالحسین مختاباد',
+      artist_name == 'Afshin Moghaddam' ~ 'افشین مقدم',
+      artist_name == 'Ali Zand Vakili' ~ 'علی زندوکیلی',
+      artist_name == 'Alireza Assar' ~ 'علیرضا اعصار',
+      artist_name == 'Alireza Eftekhari' ~ 'علیرضا افتخاری',
+      artist_name == 'Alireza Ghorbani' ~ 'علیرضا قربانی',
+      artist_name == 'Amir Tataloo' ~ 'امیر تتلو',
+      artist_name == 'Amirabbas Golab' ~ 'امیرعباس گلاب',
+      artist_name == 'Babak Jahanbakhsh' ~ 'بابک جهانبخش',
+      artist_name == 'Dang Show	' ~ 'دنگ شو',
+      artist_name == 'Dariush' ~ 'داریوش',
+      artist_name == 'Kaveh Deylami' ~ 'کاوه دیلمی',
+      artist_name == 'Kayhan Kalhor' ~ 'کیهان کلهز',
+      artist_name == 'Koveyti Poor' ~ 'کویتی پور',
+      artist_name == 'Majid Akhshabi' ~ 'مجید اخشابی',
+      artist_name == 'Mazyar Fallahi' ~ 'مازیار فلاحی',
+      artist_name == 'Mehdi Yarrahi' ~ 'مهدی یراحی',
+      artist_name == 'Moein' ~ 'معین',
+      artist_name == 'Mohammad-Reza Shajarian' ~ 'محمد رضا شجریان',
+      artist_name == 'Mohammad Alizadeh' ~ 'محمد علیزاده',
+      artist_name == 'Mohammad Esfahani' ~ 'محمد اصفهانی',
+      artist_name == 'Mohammad Golriz' ~ 'محمد گلریز',
+      artist_name == 'Mohammad Reza Lotfi' ~ 'محمد رضا لطفی',
+      artist_name == 'Mohsen Chavoshi' ~ 'محسن چاووشی',
+      artist_name == 'Mohammadreza Shajarian' ~ 'محمد رضا شجریان',
+      artist_name == 'Mohsen Namjoo' ~ 'محسن نامجو',
+      artist_name == 'Mohsen Sharifian' ~ 'محسن شریفیان',
+      artist_name == 'Mohsen Yeganeh' ~ 'محسن یگانه',
+      artist_name == 'Morteza Pashaei' ~ 'مرتضی پاشایی',
+      artist_name == 'Parviz Meshkatian' ~ 'پرویز مشکاتیان',
+      artist_name == 'Nasser Abdollahi' ~ 'ناصر عبداللهی',
+      artist_name == 'Rastak' ~ 'رستاک',
+      artist_name == 'Reza Sadeghi' ~ 'رضا صادقی',
+      artist_name == 'Salar Aghili' ~ 'سالار عقیلی',
+      artist_name == 'Sattar' ~ 'ستار',
+      artist_name == 'Shahram Shabpareh' ~ 'شهرام شب پره',
+      artist_name == 'Reza Sadeghi' ~ 'رضا صادقی',
+      artist_name == 'Peyman Yazdanian' ~ 'پیمان یزدانیان',
+      artist_name == 'Siavash Ghomayshi' ~ 'سیاوش قمیشی',
+      artist_name == 'Soheil Nafissi' ~ 'سهیل نفیسی',
+      artist_name == 'Homayoun Shajarian' ~ 'همایون شجریان',
+      artist_name == 'Roozbeh Nematollahi' ~ 'روزبه نعمت اللهی',
+      artist_name == 'Dang Show' ~ 'دنگ شو',
+      artist_name == 'Shahram Shokoohi' ~ 'شهرام شکوهی',
+      artist_name == "Kourosh Yaghmaei" ~ 'کوروش یغمایی',
+      artist_name == "Mohammad Nouri" ~ 'محمد نوری',
+      artist_name == 'Hamid Hami' ~ 'حمید حامی',
+      artist_name == "Sirvan Khosravi" ~ 'سیروان خسروی',
+      artist_name == 'Ebrahim Monsefi' ~ 'ابراهیم منصفی',
+      artist_name == "Farman Fathalian" ~ 'فرمان فتحعلیان',
+      artist_name == "Hichkas" ~ 'هیچ کس',
+      artist_name == 'Habib' ~ 'حبیب',
+      artist_name == "Xaniar Khosravi" ~ 'زانیار خسروی',
+      artist_name == "Ali Lohrasbi" ~ 'علی لهراسبی',
+      TRUE ~ 'سایر'
+    )
+  ) %>%
+  # filter wrong artists
+  filter(!artist_name %in% c('Eminem', 'Habibi', 'Ebi')) 
+```
+
+# Merging audio features and so
+```{r}
+spotify_songs_audio_features_2 <-
+  spotify_songs_audio_features %>%  select(
+    track_id,
+    track_number,
+    artist_name,
+    track_name,
+    artist_name_farsi,
+    album_name,
+    album_id,
+    album_release_date,
+    album_release_year,
+    explicit,
+    disc_number,
+    track_href,
+    danceability,
+    energy,
+    key,
+    loudness,
+    mode,
+    speechiness,
+    acousticness,
+    instrumentalness,
+    liveness,
+    valence,
+    tempo,
+    duration_ms,
+    time_signature,
+    key_name,
+    mode_name,
+    key_mode
+  )
+
+songs_audio_plus_pop <- artist_top_tracks_2 %>% 
+  right_join(spotify_songs_audio_features_2,by = intersect(names(artist_top_tracks_2) , names(spotify_songs_audio_features_2))) 
+
+```
+
+
+```{r}
+
+```
+
+### Songs that are not in the audio features
+```{r}
+pop_not_audio_features <- artist_top_tracks_2 %>%
+  anti_join(spotify_songs_audio_features_2,
+            by = c('track_id', 'artist_name'))
+afeaure0_100 <- pop_not_audio_features %>%
+  select(track_id) %>%
+  slice(1:100) %>%
+  pull() %>%
+  get_track_audio_features()
+
+afeaure100_200 <- pop_not_audio_features %>%
+  select(track_id) %>%
+  slice(101:110) %>%
+  pull() %>%
+  get_track_audio_features()
+a_features <- afeaure0_100 %>% bind_rows(afeaure100_200)
+a_features <-
+  pop_not_audio_features %>% bind_cols(a_features)  %>% select(-uri, -id, -type, -analysis_url) #%>%
+a_features$album_release_year = 0
+a_features$key_name = ''
+a_features$mode_name = ''
+a_features$key_mode = ''
+
+setdiff(names(a_features) , names(songs_audio_plus_pop))
+
+
+
+```
+
+```{r}
+songs_audio_plus_pop_merged_04_04_2020.csv <- songs_audio_plus_pop %>% 
+  bind_rows(a_features)
+songs_audio_plus_pop_merged_04_04_2020.csv %>% 
+  write_csv('songs_audio_plus_pop_merged_04_04_2020.csv')
+```
+
+
+```{r}
+sheets_deauth()
+songs_with_fa_names <- read_sheet('https://docs.google.com/spreadsheets/d/1EOhMjyscNOtMTIEujDTUFPt03Gg9YCAoyXwahsXCyN8/edit?usp=sharing')
+```
+
+
+```{r}
+
+songs_audio_plus_pop_merged_04_04_2020_with_fa_names <-
+  songs_with_fa_names %>%
+  filter(!is.na(track_name_farsi)) %>%
+  select(track_id, track_name_farsi, poet, lyrics, `lyrics source`) %>%
+  right_join(songs_audio_plus_pop_merged_04_04_2020.csv, by = c('track_id'))
+
+
+artis_top_track_farsi_names <-
+  read_csv('artist_top_tracks_01_04_2020.csv')
+
+songs_audio_plus_pop_merged_04_04_2020_with_fa_names <-
+  artis_top_track_farsi_names %>%
+  filter(!is.na(track_name_farsi)) %>%
+  select(track_id, track_name_farsi) %>%
+  right_join(songs_audio_plus_pop_merged_04_04_2020_with_fa_names,
+             by = c('track_id'))
+
+songs_audio_plus_pop_merged_04_04_2020_with_fa_names %>%
+  mutate(track_name_farsi = if_else(
+    !is.na(track_name_farsi.x),
+    track_name_farsi.x,
+    track_name_farsi.y
+  )) %>%
+  select(-track_name_farsi.x, -track_name_farsi.y) %>%
+  mutate(
+    artist_name = if_else(
+      artist_name == 'Mohammad-Reza Shajarian',
+      'Mohammadreza Shajarian',
+      artist_name
+    ),
+    artist_name = if_else(
+      artist_name == 'Ehsan Khajehamiri',
+      'Ehsan Khajeh Amiri',
+      artist_name
+    ),
+    artist_name = if_else(
+      artist_name == 'Mohsen Chavoshig',
+      'Mohsen Chavoshi',
+      artist_name
+    )
+  ) %>%
+  
+  write_csv('songs_audio_plus_missing_pop_merged_04_04_2020_with_fa_names.csv')
+```
+
+
+

@@ -21,17 +21,17 @@ custom_theme <- theme_tufte() +
       size = 25,
       hjust = 0.5
     ),
-    strip.text.x = element_text(margin = margin(1, 0.5, 0.2, 0.5, "cm")),
+    strip.text.x = element_text(margin = ggplot2::margin(1, 0.5, 0.2, 0.5, "cm")),
     plot.caption = element_text(
       #family = 'B Mitra',
       size = 14,
-      margin = margin(1.5, 0, 1.5, 0, "cm"),
+      margin = ggplot2::margin(1.5, 0, 1.5, 0, "cm"),
     ),
     plot.title = element_text(
       family = 'American Typewriter',
       face = "bold",
       size = 35,
-      margin = margin(1, 0, 1, 0, "cm"),
+      margin = ggplot2::margin(1, 0, 1, 0, "cm"),
       hjust = 0,
       vjust = -0.5
     ),
@@ -41,7 +41,7 @@ custom_theme <- theme_tufte() +
       face = "bold",
       size = 20,
       color = 'gray40',
-      margin = margin(1, 0, 1, 0, "cm"),
+      margin = ggplot2::margin(1, 0, 1, 0, "cm"),
       hjust = 0
     ),
     axis.text.y.left = element_text(family = 'American Typewriter', size = 16),
